@@ -4,7 +4,7 @@ from multiprocessing.managers import BaseManager
 from multiprocessing import Event
 from forecasting_model.rl_training import continuous_train_rl_with_forecast
 from experimental_pipeline.resilience_testing import rapid_prediction_generation
-from forecasting_model.logging_config import rl_logger
+from config.logging_config import rl_logger
 
 # Connect to the queue server
 class QueueManager(BaseManager):

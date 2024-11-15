@@ -1,99 +1,125 @@
-# ML-Scope: A Real-Time Reinforcement Learning Pipeline with Queue Management
+# ML-Scope: A Real-Time Machine Learning Pipeline for Forecasting and Reinforcement Learning
 
 ## Overview
 
-ML-Scope is a reinforcement learning (RL) project designed to simulate real-time decision-making using a shared prediction queue. This project integrates a real-time forecasting model, a reinforcement learning agent, and robust queue handling mechanisms. It emphasizes resilience testing, hyperparameter experimentation, and scalability for real-time systems.
+ML-Scope is a comprehensive project designed to simulate a scalable real-time machine learning pipeline that integrates **forecasting models**, **reinforcement learning (RL)**, and robust **queue management**. The project emphasizes **hyperparameter experimentation**, **resilience testing**, and **modular scalability**, preparing for real-world applications in AI and ML engineering roles.
 
-This project also addresses critical skill gaps, such as:
+Through this project, critical skills such as **real-time queue management**, **hardware-aware optimizations**, and **reinforcement learning integration** are demonstrated and addressed.
 
-- Real-time queue management
-- Reinforcement learning integration
-- Resilience testing under high-load conditions
-- Experimentation with hyperparameter tuning
+---
 
 ## Key Features
 
 1. **Real-Time Prediction Queue**:
 
-   - Forecasting model generates predictions and enqueues them for real-time decision-making.
-   - Queue size is capped at 100, ensuring efficient memory usage and preventing overflow.
+   - A shared prediction queue facilitates inter-process communication between forecasting and RL modules.
+   - Queue operations include logging for enqueue and dequeue events to track latency and overflow scenarios.
 
-2. **Reinforcement Learning Integration**:
+2. **Forecasting Model with Hardware Awareness**:
 
-   - The RL agent uses predictions from the queue to make real-time decisions.
-   - A Q-learning algorithm trains the agent to optimize decisions based on incoming predictions.
+   - LSTM-based forecasting model with automatic hardware detection (CPU/GPU).
+   - Dynamic quantization optimizes performance for CPU-based inference when GPUs are unavailable.
 
-3. **Resilience Testing**:
+3. **Reinforcement Learning Integration**:
 
-   - High-load scenarios are simulated to test queue stability and system robustness.
-   - Custom logging tracks queue performance, including enqueue and dequeue delays.
+   - Q-learning agent processes real-time predictions for adaptive decision-making.
+   - Logs all actions, rewards, and cumulative rewards for performance analysis.
 
-4. **Experimentation Pipeline**:
+4. **Experimental Pipeline**:
 
-   - An experimental pipeline tests various RL hyperparameters (learning rate, exploration rate, discount factor).
-   - Results are logged and analyzed for performance optimization.
+   - Automates hyperparameter optimization across learning rate, exploration rate, and discount factor.
+   - Resilience testing simulates high-load scenarios to validate queue and model performance.
 
-5. **Scalable and Modular Design**:
-   - Modular structure ensures separation of concerns (e.g., prediction generation, RL training, resilience testing).
-   - Supports future extensions for additional forecasting models or RL agents.
+5. **Scalability and Modular Design**:
+
+   - Modular structure for easy extensions, such as adding forecasting models or integrating with custom accelerators.
+
+6. **Comprehensive Logging**:
+   - Centralized logging tracks queue operations, RL training, and forecasting activities.
+
+---
+
+## Recent Enhancements
+
+### **1. Advanced Logging System**
+
+- **Queue Monitoring**: Logs every enqueue and dequeue operation with timestamps and latencies in `logs/queue_processing.log`.
+- **RL-Specific Logs**: Logs RL actions, rewards, and cumulative rewards in `logs/rl_training.log`.
+- **Custom Logging Configuration**: Centralized in `config/logging_config.py` to manage different logging streams independently.
+
+### **2. GPU and CPU Optimization**
+
+- Forecasting and RL models now detect hardware capabilities using `config/device_config.py`.
+- Implements **torch quantization** to dynamically optimize for CPU when GPUs are unavailable.
+  ```python
+  model = torch.quantization.quantize_dynamic(model, {torch.nn.Linear}, dtype=torch.qint8)
+  ```
+
+### **3. Automated Hyperparameter Tuning**
+
+- `experimental_pipeline/pipeline.py` automates testing of different RL configurations, including:
+  - Learning Rate: 0.01, 0.1, 0.5
+  - Exploration Rate: 1.0, 0.8, 0.5
+  - Discount Factor: 0.9, 0.95, 0.99
+- Results are logged with final rewards for analysis and selection of optimal parameters.
+
+### **4. Resilience Testing**
+
+- `experimental_pipeline/resilience_testing.py` rapidly generates predictions to test queue stability under high load.
+- Ensures system robustness by logging enqueue delays and analyzing performance.
+
+### **5. Modular Extensions**
+
+- Developed `open_source_contributions/custom_gpu_module.py` for integrating custom GPU optimizations or AI accelerators.
+- Logs integration steps in `docs/integration_notes.md` to assist future contributors.
 
 ---
 
 ## Technical Details
 
-### 1. Real-Time Prediction Queue
+### **Real-Time Prediction Queue**
 
-- **Implementation**: `forecasting_model/queue_server.py`
-- **Description**:
-  - A shared queue is managed using Python’s `multiprocessing.managers.BaseManager`.
-  - Forecasting models enqueue predictions, and the RL agent dequeues them in real-time.
-  - Queue operations include logging for enqueue and dequeue timestamps to monitor delays.
-- **Key Features**:
-  - Maximum queue size of 100 to prevent overflow.
-  - Overwrite logic to replace oldest predictions when the queue is full.
+- **File**: `forecasting_model/queue_server.py`
+- Implements a **shared queue** with Python's `multiprocessing.managers.BaseManager`.
+- Logs queue operations in real time, including overflow handling:
+  ```python
+  if prediction_queue.full():
+      prediction_queue.get()  # Remove the oldest prediction
+  log_enqueue(prediction_queue, prediction)
+  ```
 
-### 2. Forecasting Model
+### **Forecasting Model**
 
-- **Implementation**: `forecasting_model/forecast_training.py`
-- **Description**:
-  - Generates predictions using an LSTM-based model.
-  - Predictions are enqueued into the shared queue for processing by the RL agent.
-  - Handles queue overflow gracefully, logging warnings when predictions are skipped.
-- **Key Features**:
-  - Real-time prediction generation at configurable intervals.
-  - Scalable LSTM architecture for handling larger datasets.
+- **File**: `forecasting_model/forecast_training.py`
+- LSTM-based forecasting with quantization for CPU optimization:
+  ```python
+  model = torch.quantization.quantize_dynamic(model, {torch.nn.Linear}, dtype=torch.qint8)
+  ```
+- Generates predictions and enqueues them into the shared queue for downstream processing.
 
-### 3. Reinforcement Learning Agent
+### **Reinforcement Learning Agent**
 
-- **Implementation**: `forecasting_model/rl_training.py`, `forecasting_model/rl_utils.py`
-- **Description**:
-  - The RL agent uses a custom Q-learning implementation to optimize decisions based on predictions dequeued from the shared queue.
-  - Actions are chosen dynamically using an exploration-exploitation strategy, with rewards derived from predictions.
-- **Key Features**:
-  - Real-time decision-making integrated with the prediction queue.
-  - Action-based reward scaling to guide learning.
-  - Supports hyperparameter tuning for learning rate, exploration rate, and discount factor.
+- **Files**:
+  - `forecasting_model/rl_training.py`: RL training script with real-time prediction consumption.
+  - `forecasting_model/rl_utils.py`: Helper functions for Q-learning and state management.
+- Tracks and logs all RL actions and rewards in `logs/rl_training.log`:
+  ```python
+  rl_logger.info(f"Action={action}, Reward={reward}, Cumulative Reward={total_reward}")
+  ```
 
-### 4. Resilience Testing
+### **Experimental Pipeline**
 
-- **Implementation**: `experimental_pipeline/resilience_testing.py`
-- **Description**:
-  - Simulates high-load scenarios by rapidly enqueuing predictions into the shared queue.
-  - Tests queue handling, including logging delays and monitoring performance under stress.
-- **Key Features**:
-  - Customizable number of predictions and enqueue delay.
-  - Logs detailed queue metrics for debugging and analysis.
+- **File**: `experimental_pipeline/pipeline.py`
+- Tests hyperparameter combinations, logging rewards for each configuration.
+- Automatically terminates RL training when the prediction queue is empty during testing.
 
-### 5. Experimental Pipeline
+### **Resilience Testing**
 
-- **Implementation**: `experimental_pipeline/pipeline.py`
-- **Description**:
-  - Automates hyperparameter tuning for the RL agent.
-  - Runs multiple experiments with different configurations of learning rate, exploration rate, and discount factor.
-  - Automatically stops RL training when all predictions are processed.
-- **Key Features**:
-  - Parallel monitoring of queue state to trigger training termination.
-  - Logs results for each hyperparameter configuration.
+- **File**: `experimental_pipeline/resilience_testing.py`
+- Rapidly enqueues predictions to simulate high-traffic conditions.
+- Logs all enqueue/dequeue operations and performance metrics for debugging.
+
+For a complete breakdown of the technical structure, including key files and their functionalities, see the [Architecture Documentation](docs/architecture.md).
 
 ---
 
@@ -108,45 +134,85 @@ ml-scope/
 │   ├── queue_server.py       # Shared queue implementation
 │   ├── queue_monitor.py      # Logs queue enqueue and dequeue operations
 │   └── __init__.py
+├── config/
+│   ├── logging_config.py     # Modular logging setup
+│   ├── device_config.py      # Hardware detection and configuration
+│   └── __init__.py
 ├── experimental_pipeline/
 │   ├── pipeline.py           # Experimental pipeline for hyperparameter tuning
 │   ├── resilience_testing.py # Resilience testing for high-load scenarios
 │   └── __init__.py
+├── open_source_contributions/
+│   ├── custom_gpu_module.py  # Custom GPU optimization plugin
+│   └── integration_notes.md  # Notes for integrating external contributions
+├── docs/
+│   ├── README.md             # Main project overview
+│   ├── architecture.md       # System architecture documentation
+│   ├── setup_instructions.md # Local setup instructions
+│   ├── integration_notes.md  # Integration documentation
+│   └── api_documentation.md  # API details
 ├── logs/                     # Log files for queue operations and training
 ├── tests/                    # Automated tests for resilience and integration
-├── docs/                     # Documentation for architecture and setup
 ├── requirements.txt          # Project dependencies
-└── README.md                 # Project overview and details
+└── README.md                 # Project overview
 ```
 
 ---
 
 ## Getting Started
 
+### Prerequisites
+
+- Python 3.8+
+- A virtual environment (recommended)
+
 1. **Setup**:
 
-   - Install dependencies: `pip install -r requirements.txt`.
-   - Start the queue server: `python forecasting_model/queue_server.py`.
+   - Install dependencies:
+
+     ```bash
+     pip install -r requirements.txt
+     ```
+
+   - Start the queue server:
+     ```bash
+     python forecasting_model/queue_server.py
+     ```
 
 2. **Run Forecasting Model**:
 
-   - Generate predictions: `python forecasting_model/forecast_training.py`.
-   - Resilience Testing: `python experimental_pipeline/resilience_testing.py`.
+   - Generate predictions:
+     ```bash
+     python forecasting_model/forecast_training.py
+     ```
 
 3. **Run RL Training**:
 
-   - Start RL agent: `python forecasting_model/rl_training.py`.
+   - Start RL agent:
+     ```bash
+     python forecasting_model/rl_training.py
+     ```
 
 4. **Run Experiments**:
-   - Launch experimental pipeline: `python experimental_pipeline/pipeline.py`.
+   - Launch experimental pipeline:
+     ```bash
+     python experimental_pipeline/pipeline.py
+     ```
 
 ---
 
-## Goals
+## Contributing
 
-This project addresses the following objectives:
+We welcome contributions to ML-Scope! If you’d like to contribute, please read the [Contributing Guidelines](CONTRIBUTING.md) to get started.
 
-- Demonstrating real-time queue handling and decision-making.
-- Building expertise in reinforcement learning with dynamic data.
-- Testing system resilience under high-load conditions.
-- Exploring hyperparameter optimization for RL agents.
+---
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
+
+---
+
+## Acknowledgments
+
+Thank you to all contributors and collaborators who helped build ML-Scope into a robust real-time RL pipeline.

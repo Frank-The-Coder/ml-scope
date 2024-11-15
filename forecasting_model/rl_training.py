@@ -1,11 +1,15 @@
 # forecasting_model/rl_training.py
 import numpy as np
+import torch
 import signal
 from multiprocessing.managers import BaseManager
 from forecasting_model.rl_utils import QLearningAgent, SimpleEnv
 from multiprocessing import Event
-from forecasting_model.logging_config import rl_logger
+from config.logging_config import rl_logger
+from config.device_config import device
 
+# Detect GPU or fallback to CPU
+rl_logger.info(f"Using device: {device}")
 
 # Handler for graceful exit
 def signal_handler(sig, frame, stop_event):
@@ -19,7 +23,7 @@ def continuous_train_rl_with_forecast(prediction_queue, stop_event, learning_rat
     signal.signal(signal.SIGINT, lambda sig, frame: signal_handler(sig, frame, stop_event))
     signal.signal(signal.SIGTERM, lambda sig, frame: signal_handler(sig, frame, stop_event))
 
-    env = SimpleEnv(prediction_queue)
+    env = SimpleEnv(prediction_queue).to(device)
     agent = QLearningAgent(env.observation_space, env.action_space)
 
     total_reward = 0

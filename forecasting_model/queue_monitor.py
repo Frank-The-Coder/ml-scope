@@ -1,6 +1,6 @@
 import time
 import _queue  # Import _queue to catch Empty specifically for managed queues
-from forecasting_model.logging_config import queue_logger  # Import the queue-specific logger
+from config.logging_config import queue_logger  # Import the queue-specific logger
 
 counter = 0
 

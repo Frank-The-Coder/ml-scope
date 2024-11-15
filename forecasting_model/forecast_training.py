@@ -5,6 +5,11 @@ import torch.quantization
 import numpy as np
 from multiprocessing.managers import BaseManager
 from forecasting_model.queue_monitor import log_enqueue
+from config.logging_config import setup_logger
+from config.device_config import device
+
+logger = setup_logger("forecast_training")
+logger.info(f"Using device: {device}")
 
 # Sample LSTM Model
 class ForecastingLSTM(nn.Module):
@@ -21,12 +26,18 @@ class ForecastingLSTM(nn.Module):
 # Data generation
 def generate_sample_data(seq_length=50):
     X = np.random.randn(seq_length, 1).astype(np.float32)
-    return torch.tensor([X])
+    return torch.tensor([X]).to(device)
 
 def generate_prediction(prediction_queue):
     X = generate_sample_data()
-    model = ForecastingLSTM()
-    model = torch.quantization.quantize_dynamic(model, {torch.nn.Linear}, dtype=torch.qint8)
+    if device.type == "cuda":
+        model = ForecastingLSTM().to(device)
+        print(f"Non-quantized model on {device}.")
+    else:
+        model = ForecastingLSTM()
+        model = torch.quantization.quantize_dynamic(model, {torch.nn.Linear}, dtype=torch.qint8)
+        print("Quantized model for CPU.")
+
 
     # Generate a single prediction
     with torch.no_grad():
