@@ -1,16 +1,10 @@
 # experimental_pipeline/pipeline.py
-import sys
-import os
-# Add the parent directory to sys.path for imports
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-import time
 import itertools
 from multiprocessing.managers import BaseManager
 from multiprocessing import Event
 from forecasting_model.rl_training import continuous_train_rl_with_forecast
-from forecasting_model.forecast_training import generate_prediction
 from experimental_pipeline.resilience_testing import rapid_prediction_generation
-
+from forecasting_model.logging_config import rl_logger
 
 # Connect to the queue server
 class QueueManager(BaseManager):
@@ -35,9 +29,13 @@ def run_experiments():
     # Store results for analysis
     results = []
 
+    # Clear the RL-specific log
+    with open('logs/rl_training.log', 'w') as rl_log:
+        rl_log.write('')
+
     # Loop over all combinations of hyperparameters
     for lr, er, df in itertools.product(learning_rates, exploration_rates, discount_factors):
-        print(f"\nTesting with learning_rate={lr}, exploration_rate={er}, discount_factor={df}")
+        rl_logger.info(f"Testing configuration: learning_rate={lr}, exploration_rate={er}, discount_factor={df}")
 
         # Create a fresh stop_event for each experiment
         stop_event = Event()
@@ -51,26 +49,25 @@ def run_experiments():
                 stop_event,
                 learning_rate=lr,
                 exploration_rate=er,
-                discount_factor=df
+                discount_factor=df,
+                test=True
             )
 
-
             # Record the results for this hyperparameter set
-            results.append((lr, er, df, total_reward))
-            print(f"Total Reward for (learning_rate={lr}, exploration_rate={er}, discount_factor={df}): {total_reward}")
+            rl_logger.info(f"Configuration: lr={lr}, er={er}, df={df} - Total Reward: {total_reward}")
 
+            results.append((lr, er, df, total_reward))
             # Stop the current training session
             stop_event.set()
 
-        except KeyboardInterrupt:
-            print("Experiment interrupted, moving to the next configuration.")
+        except KeyboardInterrupt as e:
+            rl_logger.error(f"Experiment failed with configuration lr={lr}, er={er}, df={df} due to {e}")
             stop_event.set()  # Ensure the current training session exits cleanly
             continue  # Proceed to the next parameter set
 
-    # Print out all results for comparison
-    print("\n--- Experiment Results ---")
-    for lr, er, df, total_reward in results:
-        print(f"learning_rate={lr}, exploration_rate={er}, discount_factor={df} => Total Reward: {total_reward}")
+    # Log and display best configuration based on total reward
+    best_config = max(results, key=lambda x: x[3])  # Find config with the highest total reward
+    rl_logger.info(f"Best Configuration: lr={best_config[0]}, er={best_config[1]}, df={best_config[2]} with Reward: {best_config[3]}")
 
 if __name__ == "__main__":
     run_experiments()

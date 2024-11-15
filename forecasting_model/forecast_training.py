@@ -1,11 +1,10 @@
 # forecasting_model/forecast_training.py
 import torch
 import torch.nn as nn
+import torch.quantization
 import numpy as np
 from multiprocessing.managers import BaseManager
 from forecasting_model.queue_monitor import log_enqueue
-
-
 
 # Sample LSTM Model
 class ForecastingLSTM(nn.Module):
@@ -27,12 +26,12 @@ def generate_sample_data(seq_length=50):
 def generate_prediction(prediction_queue):
     X = generate_sample_data()
     model = ForecastingLSTM()
-    model.eval()
+    model = torch.quantization.quantize_dynamic(model, {torch.nn.Linear}, dtype=torch.qint8)
 
     # Generate a single prediction
     with torch.no_grad():
         prediction = model(X).item()
-    
+
     # Enqueue with logging
     if prediction_queue.full():
         prediction_queue.get()  # Remove the oldest prediction if queue is full

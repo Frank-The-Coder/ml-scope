@@ -18,7 +18,7 @@ class SimpleEnv(gym.Env):
 
     def step(self, action, stop_event):
         next_state = self.observation_space.sample()
-        
+
         reward = 0
         prediction = log_dequeue(self.prediction_queue, stop_event)  # Read and remove the latest prediction
         # Action-based reward scaling

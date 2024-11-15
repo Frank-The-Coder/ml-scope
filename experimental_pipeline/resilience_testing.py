@@ -1,11 +1,8 @@
 # experimental_pipeline/resilience_testing.py
 import time
-import sys
-import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
 from forecasting_model.forecast_training import generate_prediction
 from multiprocessing.managers import BaseManager
+import logging
 
 # Connect to the queue server
 class QueueManager(BaseManager):
@@ -23,6 +20,14 @@ def rapid_prediction_generation(n_predictions, delay=0.2):
     for _ in range(n_predictions):
         generate_prediction(prediction_queue)
         time.sleep(delay)
+
+def intense_stress_test(prediction_queue, duration=5):
+    start_time = time.time()
+    while time.time() - start_time < duration:
+        try:
+            generate_prediction(prediction_queue)
+        except Exception as e:
+            logging.error(f"Prediction error: {str(e)}")
 
 if __name__ == "__main__":
     rapid_prediction_generation(10, delay=0.1)  # Example: 10 predictions, 0.1s delay
